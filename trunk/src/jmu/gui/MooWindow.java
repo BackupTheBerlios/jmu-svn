@@ -27,7 +27,7 @@ import jmu.net.MooConnection;
  * MOO. This class needs a Thread in order to read input from the connection.
  */
 public class MooWindow extends JPanel implements Runnable, ActionListener {
-	
+
 	private ResourceBundle translations;
 
 	private MooConnection conn;
@@ -101,7 +101,7 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 	 */
 	public MooWindow(MooConnection conn) {
 		translations = ResourceBundle.getBundle("jmu.data.i18n.Translations");
-		
+
 		this.conn = conn;
 
 		text = new JTextPane();
@@ -135,7 +135,7 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 	public void stop() {
 		running = false;
 	}
-	
+
 	/**
 	 * Closes the connection to the MOO. The user should probably use the 
 	 * MOO provided quit command.
@@ -185,8 +185,6 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 					}
 					Thread.yield();
 				}
-				
-				style.style = 0;
 
 				scrollDown = false;
 
@@ -260,7 +258,7 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 			parm = Integer.parseInt(matcher.group(), 16);
 
 			if (parm == 0) {
-				style.style = 1;
+				style.style = 0;
 				style.bg = 0;
 				style.fg = 7;
 			} else if (parm == 1) {
@@ -346,12 +344,12 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 	 * @author ritter
 	 */
 	private class AnsiStyle {
-		
+
 		/**
 		 * The style in use. 0 is normal, 1 is bold.
 		 */
 		int style = 0;
-		
+
 		/**
 		 * The ANSI foreground colour, 0 - 7
 		 */
