@@ -1,0 +1,7 @@
+0.0.2
+	Added disconnect menu item.
+	Tested the exception handling. Still needs some work.
+	Fixed the ANSI colour support. The reset code was setting bold.
+
+0.0.1
+	Initial Release

@@ -2,7 +2,6 @@ package jmu.gui;
 
 import java.io.IOException;
 import java.util.ResourceBundle;
-import java.util.Vector;
 
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
@@ -21,27 +20,32 @@ public class MainWindow extends JFrame {
 
 	private JMenuBar menuBar;
 	private ConnectMenu connMenu;
-	
-	private JTabbedPane mooTabs;
 
-	private Vector moos;
+	private JTabbedPane mooTabs;
 
 	public MainWindow(String title) {
 		super(title);
-		
+
 		translations = ResourceBundle.getBundle("jmu.data.i18n.Translations");
-		moos = new Vector();
 
 		menuBar = new JMenuBar();
 		setJMenuBar(menuBar);
 
 		connMenu = new ConnectMenu(this, translations.getString("ConnectMenu"));
 		menuBar.add(connMenu);
-		
+
 		mooTabs = new JTabbedPane();
 		getContentPane().add(mooTabs);
 
 		setSize(640, 480);
+	}
+	
+	public JTabbedPane getMooTabs() {
+		return mooTabs;
+	}
+	
+	public ResourceBundle getTranslations() {
+		return translations;
 	}
 
 	/**
@@ -51,22 +55,37 @@ public class MainWindow extends JFrame {
 	 * @param host the host to connect to.
 	 * @param port the port to connect on, as a decimal string
 	 */
-	public void connect(String host, String port) {
-		try {
-			System.err.println("Attempting connection");
-			MooConnection mooConn =
-				new MooConnection(host, Integer.parseInt(port));
-			System.err.println("Connection made");
-			MooWindow mooWin = new MooWindow(mooConn);
-			moos.add(mooWin);
-			mooTabs.add(host + ":" + port, mooWin);
-			
-			new Thread(mooWin).start();
-		} catch (IOException ioe) {
-			new ExceptionDialog(this, translations.getString("Exception"), ioe);
-		} catch (NumberFormatException nfe) {
-			new ExceptionDialog(this, translations.getString("Exception"), nfe);
-		}
+	public void connect(final String host, final String port) {
+		final MainWindow mwin = this;
+		new Thread(new Runnable() {
+			public void run() {
+				try {
+					System.err.println("Attempting connection");
+					MooConnection mooConn =
+						new MooConnection(host, Integer.parseInt(port));
+					System.err.println("Connection made");
+					MooWindow mooWin = new MooWindow(mooConn, getTranslations());
+					getMooTabs().add(host + ":" + port, mooWin);
+
+					new Thread(mooWin).start();
+				} catch (IOException ioe) {
+					new ExceptionDialog(
+						mwin,
+						getTranslations().getString("Exception"),
+						ioe).show();
+				} catch (NumberFormatException nfe) {
+					new ExceptionDialog(
+						mwin,
+						getTranslations().getString("Exception"),
+						nfe).show();
+				}
+			}
+		}).start();
 	}
 	
+	public void showException(String title, Exception ex) {
+		ExceptionDialog dialog = new ExceptionDialog(this, title, ex);
+		dialog.show();
+	}
+
 }

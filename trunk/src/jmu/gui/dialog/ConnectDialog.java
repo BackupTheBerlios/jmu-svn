@@ -36,7 +36,7 @@ public class ConnectDialog extends JDialog implements ActionListener {
 		super(win, title, true);
 		main = win;
 		
-		translations = ResourceBundle.getBundle("jmu.data.i18n.Translations");
+		translations = win.getTranslations();
 		
 		connect = new JButton(translations.getString("Connect"));
 		connect.addActionListener(this);

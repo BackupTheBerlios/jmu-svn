@@ -1,6 +1,5 @@
 package jmu.gui;
 
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -10,7 +9,6 @@ import java.io.IOException;
 import java.util.ResourceBundle;
 import java.util.Vector;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
@@ -48,66 +46,21 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 
 	private Exception ex;
 
-	private static final String ANSI_COLOUR_SEQUENCE_REGEX =
-		"\\\u001b\\[(\\d?\\d;)*?\\d?\\dm";
-	private static final Pattern ANSI_COLOUR_SEQUENCE_PATTERN =
-		Pattern.compile(ANSI_COLOUR_SEQUENCE_REGEX);
-
-	private static final String ANSI_COLOUR_PARAMETER_REGEX = "\\d?\\d";
-	private static final Pattern ANSI_COLOUR_PARAMETER_PATTERN =
-		Pattern.compile(ANSI_COLOUR_PARAMETER_REGEX);
-
-	static final String[] STYLES = { "normal", "bright" };
-
-	static final String[] COLOUR_NAMES =
-		{
-			"black",
-			"red",
-			"green",
-			"yellow",
-			"blue",
-			"magenta",
-			"cyan",
-			"white" };
-
-	static final Color[][] COLOURS =
-		{
-			{
-				new Color(0, 0, 0),
-				new Color(192, 0, 0),
-				new Color(0, 192, 0),
-				new Color(192, 192, 0),
-				new Color(0, 0, 192),
-				new Color(192, 0, 192),
-				new Color(0, 192, 192),
-				new Color(192, 192, 192)},
-			{
-			new Color(128, 128, 128),
-				new Color(255, 0, 0),
-				new Color(0, 255, 0),
-				new Color(255, 255, 0),
-				new Color(0, 0, 255),
-				new Color(255, 0, 255),
-				new Color(0, 255, 255),
-				new Color(255, 255, 255)
-			}
-	};
-
 	/**
 	 * Creates a new MooWindow, that read reads and writes from the specified 
 	 * connection.
 	 * 
 	 * @param conn The connection to use when communicating with the MOO.
 	 */
-	public MooWindow(MooConnection conn) {
-		translations = ResourceBundle.getBundle("jmu.data.i18n.Translations");
+	public MooWindow(MooConnection conn, ResourceBundle translations) {
+		this.translations = translations;
 
 		this.conn = conn;
 
 		text = new JTextPane();
 		text.setEditable(false);
-		text.setBackground(COLOURS[0][0]);
-		text.setForeground(COLOURS[0][7]);
+		text.setBackground(AnsiStyle.COLOURS[0][0]);
+		text.setForeground(AnsiStyle.COLOURS[0][7]);
 
 		textScroller = new JScrollPane(text);
 		vertScrollBar = textScroller.getVerticalScrollBar();
@@ -201,14 +154,14 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 					line += "\n";
 				}
 
-				matcher = ANSI_COLOUR_SEQUENCE_PATTERN.matcher(line);
+				matcher = style.getMatcher(line);
 
 				linePos = 0;
 
 				while (linePos < line.length()) {
 					if (matcher.find()) {
 						addString(line.substring(linePos, matcher.start()));
-						parseColour(matcher.group());
+						style.setColour(matcher.group());
 						text.setCharacterAttributes(
 							text.getStyle(style.toString()),
 							true);
@@ -243,38 +196,6 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 			doc.getLength(),
 			string,
 			text.getStyle(style.toString()));
-	}
-
-	/**
-	 * Processes the given ANSI escapes, and changes the style appropriately.
-	 * @param ansi the ANSI escape sequence to parse
-	 */
-	private void parseColour(String ansi) {
-		Matcher matcher = ANSI_COLOUR_PARAMETER_PATTERN.matcher(ansi);
-
-		int parm;
-
-		while (matcher.find()) {
-			parm = Integer.parseInt(matcher.group(), 16);
-
-			if (parm == 0) {
-				style.style = 0;
-				style.bg = 0;
-				style.fg = 7;
-			} else if (parm == 1) {
-				style.style = 1;
-			} else {
-				int ground = (parm & 0x70) >> 4;
-				int colour = parm & 0x0F;
-
-				if (ground == 3 && colour < 8) {
-					style.fg = colour;
-				} else if (ground == 4 && colour < 8) {
-					style.bg = colour;
-				}
-			}
-		}
-
 	}
 
 	/**
@@ -318,59 +239,33 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 
 		Style def = text.addStyle("def", null);
 		StyleConstants.setAlignment(def, StyleConstants.ALIGN_LEFT);
-		StyleConstants.setBackground(def, COLOURS[0][0]);
-		StyleConstants.setForeground(def, COLOURS[0][7]);
+		StyleConstants.setBackground(def, AnsiStyle.COLOURS[0][0]);
+		StyleConstants.setForeground(def, AnsiStyle.COLOURS[0][7]);
 		StyleConstants.setFontFamily(def, "monospaced");
 		StyleConstants.setFontSize(def, 12);
 
 		AnsiStyle ansi = new AnsiStyle();
 
-		for (ansi.style = 0; ansi.style < STYLES.length; ansi.style++) {
-			for (ansi.fg = 0; ansi.fg < COLOUR_NAMES.length; ansi.fg++) {
-				for (ansi.bg = 0; ansi.bg < COLOUR_NAMES.length; ansi.bg++) {
+		for (int st = 0; st < AnsiStyle.STYLES.length; st++) {
+			ansi.setStyle(st);
+			for (int fg = 0; fg < AnsiStyle.COLOUR_NAMES.length; fg++) {
+				ansi.setForeground(fg);
+				for (int bg = 0; bg < AnsiStyle.COLOUR_NAMES.length; bg++) {
+					ansi.setBackground(bg);
+
 					Style style = text.addStyle(ansi.toString(), def);
-					StyleConstants.setBackground(style, COLOURS[0][ansi.bg]);
+
+					StyleConstants.setBackground(
+						style,
+						AnsiStyle.COLOURS[0][bg]);
+
 					StyleConstants.setForeground(
 						style,
-						COLOURS[ansi.style][ansi.fg]);
+						AnsiStyle.COLOURS[st][fg]);
 				}
 			}
 		}
 
-	}
-
-	/**
-	 * Provides a class for easily storing the attributes of an ANSI escape
-	 * @author ritter
-	 */
-	private class AnsiStyle {
-
-		/**
-		 * The style in use. 0 is normal, 1 is bold.
-		 */
-		int style = 0;
-
-		/**
-		 * The ANSI foreground colour, 0 - 7
-		 */
-		int fg = 7;
-
-		/**
-		 * The ANSI background colour, 0 - 7
-		 */
-		int bg = 0;
-
-		/**
-		 * Provides a string we can use to recall styles.
-		 * @see java.lang.Object#toString()
-		 */
-		public String toString() {
-			return STYLES[style]
-				+ " "
-				+ COLOUR_NAMES[fg]
-				+ " "
-				+ COLOUR_NAMES[bg];
-		}
 	}
 
 }
