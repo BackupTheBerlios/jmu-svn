@@ -81,7 +81,7 @@ class AnsiStyle {
 		return style;
 	}
 	
-	public void setStyle(int style) {
+	public void setStyle(final int style) {
 		if (style == 0 || style == 1) {
 			this.style = style;
 		}
@@ -91,7 +91,7 @@ class AnsiStyle {
 		return fg;
 	}
 	
-	public void setForeground(int fg) {
+	public void setForeground(final int fg) {
 		if (fg >= 0 || fg <= 7) {
 			this.fg = fg;
 		}
@@ -101,7 +101,7 @@ class AnsiStyle {
 		return bg;
 	}
 
-	public void setBackground(int bg) {
+	public void setBackground(final int bg) {
 		if (bg >= 0 || bg <= 7) {
 			this.bg = bg;
 		}
@@ -112,7 +112,7 @@ class AnsiStyle {
 	 * @param data the text to search
 	 * @return a suitable matcher instance
 	 */
-	public Matcher getMatcher(String data) {
+	public Matcher getMatcher(final String data) {
 		return COLOUR_SEQUENCE_PATTERN.matcher(data);
 	}
 	
@@ -120,13 +120,11 @@ class AnsiStyle {
 	 * Change the colour to what the ANSI escape specifies.
 	 * @param ansi the ANSI escape sequence to parse
 	 */
-	public void setColour(String ansi) {
-		Matcher matcher = COLOUR_PARAMETER_PATTERN.matcher(ansi);
-
-		int parm;
+	public void setColour(final String ansi) {
+		final Matcher matcher = COLOUR_PARAMETER_PATTERN.matcher(ansi);
 
 		while (matcher.find()) {
-			parm = Integer.parseInt(matcher.group(), 16);
+			final int parm = Integer.parseInt(matcher.group(), 16);
 
 			if (parm == 0) {
 				style = 0;
@@ -135,8 +133,8 @@ class AnsiStyle {
 			} else if (parm == 1) {
 				style = 1;
 			} else {
-				int ground = (parm & 0x70) >> 4;
-				int colour = parm & 0x0F;
+				final int ground = (parm & 0x70) >> 4;
+				final int colour = parm & 0x0F;
 
 				if (ground == 3 && colour < 8) {
 					fg = colour;

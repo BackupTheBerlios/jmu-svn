@@ -19,13 +19,13 @@ import jmu.gui.MainWindow;
  */
 public class ExceptionDialog extends JDialog implements ActionListener {
 
-	private ResourceBundle translations;
+	private final ResourceBundle translations;
 	
-	private MainWindow main;
+	private final MainWindow main;
 	
-	private JTextArea traceWin;
+	private final JTextArea traceWin;
 	
-	private JButton ok;
+	private final JButton ok;
 	
 	public ExceptionDialog(MainWindow win, String title, Exception ex) {
 		super(win, title, true);
@@ -33,8 +33,8 @@ public class ExceptionDialog extends JDialog implements ActionListener {
 		
 		translations = win.getTranslations();
 		
-		StackTraceElement[] st = ex.getStackTrace();
-		StringBuffer trace = new StringBuffer(ex.toString());
+		final StackTraceElement[] st = ex.getStackTrace();
+		final StringBuffer trace = new StringBuffer(ex.toString());
 		for (int i = 0; i < st.length; i++) {
 			trace.append('\t');
 			trace.append(st[i]);
@@ -60,10 +60,10 @@ public class ExceptionDialog extends JDialog implements ActionListener {
 	}
 
 	private void __layoutComponents() {
-		Container pane = getContentPane();
+		final Container pane = getContentPane();
 		pane.setLayout(new GridBagLayout());
 		
-		GridBagConstraints c = new GridBagConstraints();
+		final GridBagConstraints c = new GridBagConstraints();
 		
 		c.gridy = 0; c.gridx = 0;
 		c.fill = GridBagConstraints.BOTH;

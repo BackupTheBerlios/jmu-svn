@@ -9,9 +9,9 @@ import java.net.Socket;
  */
 public class MooConnection {
 
-	private Socket conn;
-	private BufferedReader in;
-	private BufferedWriter out;
+	private final Socket conn;
+	private final BufferedReader in;
+	private final BufferedWriter out;
 
 	/**
 	 * Creates a new MOO Connection, connected the the specified host and port.
@@ -24,25 +24,27 @@ public class MooConnection {
 	 * 		connecting, or opening the I/O streams
 	 */
 	public MooConnection(String hostname, int port) throws IOException {
-		InetAddress hosts[] = InetAddress.getAllByName(hostname);
+		final InetAddress hosts[] = InetAddress.getAllByName(hostname);
+		Socket _conn = null;
 		
-		for (int i = 0; i < hosts.length && conn == null; i++) {
+		for (int i = 0; i < hosts.length && _conn == null; i++) {
 			try {
-				conn = new Socket(hosts[i], port);
+				_conn = new Socket(hosts[i], port);
 			} catch (IOException e) {
 				// ignore, connection refused no doubt
 			}
 		}
 
-		if (conn == null) {
+		if (_conn == null) {
 			throw new IOException("No connection attempt succeeded.");
 		} else {
+			conn = _conn;
 			in =
 				new BufferedReader(
-					new InputStreamReader(conn.getInputStream()));
+					new InputStreamReader(_conn.getInputStream()));
 			out =
 				new BufferedWriter(
-					new OutputStreamWriter(conn.getOutputStream()));
+					new OutputStreamWriter(_conn.getOutputStream()));
 		}
 	}
 
@@ -61,7 +63,7 @@ public class MooConnection {
 	 * @param msg the line to send
 	 * @throws IOException if an I/O error occurs
 	 */
-	public void send(String msg) throws IOException {
+	public void send(final String msg) throws IOException {
 		out.write(msg);
 		if (!msg.endsWith("\n")) {
 			out.write('\n');

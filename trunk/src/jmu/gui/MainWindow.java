@@ -1,5 +1,6 @@
 package jmu.gui;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ResourceBundle;
 
@@ -16,34 +17,44 @@ import jmu.net.MooConnection;
  */
 public class MainWindow extends JFrame {
 
-	private ResourceBundle translations;
+	private final File homeDir;
+	private final File jmuDir;
 
-	private JMenuBar menuBar;
-	private ConnectMenu connMenu;
+	private final ResourceBundle translations;
 
-	private JTabbedPane mooTabs;
+	private final JMenuBar menuBar;
+	private final ConnectMenu connMenu;
 
-	public MainWindow(String title) {
+	private final JTabbedPane mooTabs;
+
+	public MainWindow(final String title, final ResourceBundle translations) {
 		super(title);
+		this.translations = translations;
 
-		translations = ResourceBundle.getBundle("jmu.data.i18n.Translations");
+		homeDir = new File(System.getProperty("user.home"));
+		File _jmuDir = new File(homeDir, ".jmu");
+
+		if (!_jmuDir.exists() && homeDir.canWrite()) {
+			if (!_jmuDir.mkdirs()) {
+				jmuDir = null;
+			} else {
+				jmuDir = _jmuDir;
+			}
+		} else {
+			jmuDir = _jmuDir;
+		}
 
 		menuBar = new JMenuBar();
-		setJMenuBar(menuBar);
-
 		connMenu = new ConnectMenu(this, translations.getString("ConnectMenu"));
-		menuBar.add(connMenu);
-
 		mooTabs = new JTabbedPane();
-		getContentPane().add(mooTabs);
 
-		setSize(640, 480);
+		__layoutComponents();
 	}
-	
+
 	public JTabbedPane getMooTabs() {
 		return mooTabs;
 	}
-	
+
 	public ResourceBundle getTranslations() {
 		return translations;
 	}
@@ -64,7 +75,8 @@ public class MainWindow extends JFrame {
 					MooConnection mooConn =
 						new MooConnection(host, Integer.parseInt(port));
 					System.err.println("Connection made");
-					MooWindow mooWin = new MooWindow(mooConn, getTranslations());
+					MooWindow mooWin =
+						new MooWindow(mooConn, getTranslations());
 					getMooTabs().add(host + ":" + port, mooWin);
 
 					new Thread(mooWin).start();
@@ -72,20 +84,33 @@ public class MainWindow extends JFrame {
 					new ExceptionDialog(
 						mwin,
 						getTranslations().getString("Exception"),
-						ioe).show();
+						ioe)
+						.setVisible(true);
 				} catch (NumberFormatException nfe) {
 					new ExceptionDialog(
 						mwin,
 						getTranslations().getString("Exception"),
-						nfe).show();
+						nfe)
+						.setVisible(true);
 				}
 			}
 		}).start();
 	}
-	
-	public void showException(String title, Exception ex) {
+
+	public File getJmuDir() {
+		return jmuDir;
+	}
+
+	public void showException(final String title, final Exception ex) {
 		ExceptionDialog dialog = new ExceptionDialog(this, title, ex);
-		dialog.show();
+		dialog.setVisible(true);
+	}
+
+	private void __layoutComponents() {
+		setJMenuBar(menuBar);
+		menuBar.add(connMenu);
+		getContentPane().add(mooTabs);
+		setSize(640, 480);
 	}
 
 }

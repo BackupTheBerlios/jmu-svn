@@ -27,19 +27,19 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 
 	public static final int SCROLLBACK_HACK_FACTOR = 10;
 
-	private ResourceBundle translations;
+	private final ResourceBundle translations;
 
-	private MooConnection conn;
+	private final MooConnection conn;
 
-	private JTextPane text;
-	private JScrollPane textScroller;
-	private JScrollBar vertScrollBar;
+	private final JTextPane text;
+	private final JScrollPane textScroller;
+	private final JScrollBar vertScrollBar;
 
-	private StyledDocument doc;
-	private AnsiStyle style;
+	private final StyledDocument doc;
+	private final AnsiStyle style;
 
-	private JComboBox input;
-	private JButton send;
+	private final JComboBox input;
+	private final JButton send;
 
 	private boolean running = false;
 
@@ -51,7 +51,7 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 	 * 
 	 * @param conn The connection to use when communicating with the MOO.
 	 */
-	public MooWindow(MooConnection conn, ResourceBundle translations) {
+	public MooWindow(final MooConnection conn, final ResourceBundle translations) {
 		this.translations = translations;
 
 		this.conn = conn;
@@ -102,10 +102,10 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 	 * command history.
 	 * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
 	 */
-	public void actionPerformed(ActionEvent ae) {
+	public void actionPerformed(final ActionEvent ae) {
 		if (ae.getActionCommand().equals("comboBoxEdited")) {
-			ComboBoxEditor inputEditor = input.getEditor();
-			String text = inputEditor.getItem().toString();
+			final ComboBoxEditor inputEditor = input.getEditor();
+			final String text = inputEditor.getItem().toString();
 
 			input.addItem(text);
 			input.getEditor().selectAll();
@@ -195,7 +195,7 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 	 * @param string the String to add
 	 * @throws BadLocationException should never happen
 	 */
-	private void addString(String string) throws BadLocationException {
+	private void addString(final String string) throws BadLocationException {
 		doc.insertString(
 			doc.getLength(),
 			string,
@@ -208,7 +208,7 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 	private void __layoutComponents() {
 		setLayout(new GridBagLayout());
 
-		GridBagConstraints c = new GridBagConstraints();
+		final GridBagConstraints c = new GridBagConstraints();
 
 		c.gridx = 0;
 		c.gridy = 0;

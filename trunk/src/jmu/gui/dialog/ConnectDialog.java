@@ -19,24 +19,24 @@ import jmu.gui.MainWindow;
  */
 public class ConnectDialog extends JDialog implements ActionListener {
 	
-	private ResourceBundle translations;
+	private final ResourceBundle translations;
 	
-	private MainWindow main;
+	private final MainWindow main;
 	
-	private JButton connect;
-	private JButton cancel;
+	private final JButton connect;
+	private final JButton cancel;
 	
-	private JLabel hostLabel;
-	private JLabel portLabel;
+	private final JLabel hostLabel;
+	private final JLabel portLabel;
 	
-	private JTextField host;
-	private JTextField port;
+	private final JTextField host;
+	private final JTextField port;
 	
-	public ConnectDialog(MainWindow win, String title) {
-		super(win, title, true);
+	public ConnectDialog(final MainWindow win, final ResourceBundle translations) {
+		super(win, translations.getString("ConnectDialog"), true);
 		main = win;
 		
-		translations = win.getTranslations();
+		this.translations = translations;
 		
 		connect = new JButton(translations.getString("Connect"));
 		connect.addActionListener(this);
@@ -57,8 +57,8 @@ public class ConnectDialog extends JDialog implements ActionListener {
 	/**
 	 * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
 	 */
-	public void actionPerformed(ActionEvent ae) {
-		Object source = ae.getSource();
+	public void actionPerformed(final ActionEvent ae) {
+		final Object source = ae.getSource();
 		
 		if (source == connect) {
 			dispose();
@@ -69,10 +69,10 @@ public class ConnectDialog extends JDialog implements ActionListener {
 	}
 	
 	private void __layoutComponents() {
-		Container pane = getContentPane();
+		final Container pane = getContentPane();
 		pane.setLayout(new GridBagLayout());
 		
-		GridBagConstraints c = new GridBagConstraints();
+		final GridBagConstraints c = new GridBagConstraints();
 		
 		c.gridy = 0; c.gridx = 0;
 		c.gridwidth = 1;
