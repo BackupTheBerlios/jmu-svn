@@ -26,10 +26,12 @@ import jmu.net.MooConnection;
 public class MooWindow extends JPanel implements Runnable, ActionListener {
 
 	public static final int SCROLLBACK_HACK_FACTOR = 10;
+	public static final int SCROLLBACK_HACK_TIME = 50;
 
 	private final ResourceBundle translations;
 
 	private final MooConnection conn;
+	private final Thread thread;
 
 	private final JTextPane text;
 	private final JScrollPane textScroller;
@@ -51,7 +53,9 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 	 * 
 	 * @param conn The connection to use when communicating with the MOO.
 	 */
-	public MooWindow(final MooConnection conn, final ResourceBundle translations) {
+	public MooWindow(
+		final MooConnection conn,
+		final ResourceBundle translations) {
 		this.translations = translations;
 
 		this.conn = conn;
@@ -78,6 +82,10 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 
 		__layoutComponents();
 		__initTextStyles();
+
+		thread = new Thread(this);
+		thread.setName(thread.getName() + " (MooWindow)");
+		thread.start();
 	}
 
 	/**
@@ -85,6 +93,7 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 	 */
 	public void stop() {
 		running = false;
+		interrupt();
 	}
 
 	/**
@@ -94,6 +103,7 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 	 * 		connection
 	 */
 	public void close() throws IOException {
+		stop();
 		conn.close();
 	}
 
@@ -103,7 +113,8 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 	 * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
 	 */
 	public void actionPerformed(final ActionEvent ae) {
-		if (ae.getActionCommand().equals("comboBoxEdited")) {
+		if (ae.getActionCommand().equals("comboBoxEdited")
+			|| (ae.getSource() == send)) {
 			final ComboBoxEditor inputEditor = input.getEditor();
 			final String text = inputEditor.getItem().toString();
 
@@ -129,60 +140,105 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 			running = true;
 		}
 
-		boolean scrollDown;
-		int linePos;
-		Matcher matcher;
+		boolean scroll = false;
+		int distFromBottom = 0;
 
 		while (running) {
+			String line = null;
 			try {
-				while (!conn.ready()) {
-					if (!running) {
-						return;
-					}
-					Thread.yield();
-				}
-
-				scrollDown = false;
-
-				int sbAnchorPos =
-					vertScrollBar.getMaximum() - textScroller.getHeight();
-				sbAnchorPos = (sbAnchorPos < 0) ? 0 : sbAnchorPos;
-
-				if (Math.abs(sbAnchorPos - vertScrollBar.getValue())
-					< SCROLLBACK_HACK_FACTOR) {
-					scrollDown = true;
-				}
-
-				String line = conn.read();
-				if (!line.endsWith("\n")) {
-					line += "\n";
-				}
-
-				matcher = style.getMatcher(line);
-
-				linePos = 0;
-
-				while (linePos < line.length()) {
-					if (matcher.find()) {
-						addString(line.substring(linePos, matcher.start()));
-						style.setColour(matcher.group());
-						text.setCharacterAttributes(
-							text.getStyle(style.toString()),
-							true);
-						linePos = matcher.end();
-					} else {
-						addString(line.substring(linePos));
-						linePos = line.length();
-					}
-				}
-
-				if (scrollDown) {
-					vertScrollBar.setValue(vertScrollBar.getMaximum());
-				}
-
+				line = conn.read();
 			} catch (IOException ioe) {
 				ex = ioe;
-				running = false;
+				ioe.printStackTrace();
+				System.err.println();
+				break;
+			}
+
+			if (line == null) {
+				break;
+			}
+
+			if (!running) {
+				break;
+			}
+
+			distFromBottom =
+				Math.abs(
+					vertScrollBar.getValue()
+						- (vertScrollBar.getMaximum()
+							- vertScrollBar.getVisibleAmount()));
+
+			if (distFromBottom < SCROLLBACK_HACK_FACTOR) {
+				scroll = true;
+			}
+
+			processLine(line);
+
+			if (scroll) {
+				// set to what we get told the max is to show scrolling
+				vertScrollBar.setValue(
+					vertScrollBar.getMaximum()
+						- vertScrollBar.getVisibleAmount());
+
+				// now lag it by the time hack to get the real max, if there is
+				// nothing more to append atm
+				boolean ready;
+				try {
+					ready = conn.ready();
+				} catch (IOException ioe) {
+					ex = ioe;
+					break;
+				}
+
+				if (!ready) {
+					try {
+						Thread.sleep(SCROLLBACK_HACK_TIME);
+					} catch (InterruptedException e) {
+					}
+					vertScrollBar.setValue(
+						vertScrollBar.getMaximum()
+							- vertScrollBar.getVisibleAmount());
+					scroll = false;
+				}
+			}
+
+		}
+
+		running = false;
+	}
+
+	/**
+	 * 
+	 */
+	public void interrupt() {
+		thread.interrupt();
+	}
+
+	/**
+	 * @return
+	 */
+	public boolean isAlive() {
+		return thread.isAlive();
+	}
+
+	private void processLine(String line) {
+		Matcher matcher = style.getMatcher(line);
+
+		int linePos = 0;
+
+		while (linePos < line.length()) {
+			try {
+				if (matcher.find()) {
+					addString(line.substring(linePos, matcher.start()));
+					style.setColour(matcher.group());
+					text.setCharacterAttributes(
+						text.getStyle(style.toString()),
+						true);
+					linePos = matcher.end();
+				} else {
+					addString(line.substring(linePos));
+					linePos = line.length();
+				}
 			} catch (BadLocationException ble) {
 				ex = ble;
 				running = false;

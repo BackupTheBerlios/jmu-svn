@@ -2,7 +2,7 @@
 
 	<property file="build.properties"/>
 	
-	<property name="version" value="0.0.2"/>
+	<property name="version" value="0.0.3"/>
 
 	<target name="build">
 		<mkdir dir="output/classes"/>

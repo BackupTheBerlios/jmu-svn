@@ -1,7 +1,6 @@
 package jmu.gui;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ResourceBundle;
 
 import javax.swing.JFrame;
@@ -10,7 +9,7 @@ import javax.swing.JTabbedPane;
 
 import jmu.gui.dialog.ExceptionDialog;
 import jmu.gui.menu.ConnectMenu;
-import jmu.net.MooConnection;
+import jmu.net.Connector;
 
 /**
  * @author ritter
@@ -26,6 +25,8 @@ public class MainWindow extends JFrame {
 	private final ConnectMenu connMenu;
 
 	private final JTabbedPane mooTabs;
+	
+	private final Connector connector;
 
 	public MainWindow(final String title, final ResourceBundle translations) {
 		super(title);
@@ -47,6 +48,8 @@ public class MainWindow extends JFrame {
 		menuBar = new JMenuBar();
 		connMenu = new ConnectMenu(this, translations.getString("ConnectMenu"));
 		mooTabs = new JTabbedPane();
+		
+		connector = new Connector(this, translations);
 
 		__layoutComponents();
 	}
@@ -67,34 +70,7 @@ public class MainWindow extends JFrame {
 	 * @param port the port to connect on, as a decimal string
 	 */
 	public void connect(final String host, final String port) {
-		final MainWindow mwin = this;
-		new Thread(new Runnable() {
-			public void run() {
-				try {
-					System.err.println("Attempting connection");
-					MooConnection mooConn =
-						new MooConnection(host, Integer.parseInt(port));
-					System.err.println("Connection made");
-					MooWindow mooWin =
-						new MooWindow(mooConn, getTranslations());
-					getMooTabs().add(host + ":" + port, mooWin);
-
-					new Thread(mooWin).start();
-				} catch (IOException ioe) {
-					new ExceptionDialog(
-						mwin,
-						getTranslations().getString("Exception"),
-						ioe)
-						.setVisible(true);
-				} catch (NumberFormatException nfe) {
-					new ExceptionDialog(
-						mwin,
-						getTranslations().getString("Exception"),
-						nfe)
-						.setVisible(true);
-				}
-			}
-		}).start();
+		connector.request(host, port);
 	}
 
 	public File getJmuDir() {

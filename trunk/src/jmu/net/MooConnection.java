@@ -1,17 +1,36 @@
 package jmu.net;
 
-import java.io.*;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.net.ConnectException;
 import java.net.InetAddress;
-import java.net.Socket;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.channels.SocketChannel;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CharsetEncoder;
 
 /**
  * @author dietzla
  */
 public class MooConnection {
+	private static final int BUFFER_SIZE = 8192;
 
-	private final Socket conn;
-	private final BufferedReader in;
-	private final BufferedWriter out;
+	private final SocketChannel conn;
+
+	private final CharsetDecoder decoder;
+	private final CharsetEncoder encoder;
+
+	// all buffers should be write-ready, ie you need to flip for reading, and 
+	// compact when you're done.
+	private final ByteBuffer srBuf;
+	private final ByteBuffer swBuf;
+
+	private final CharBuffer rBuf;
+	private final CharBuffer wBuf;
 
 	/**
 	 * Creates a new MOO Connection, connected the the specified host and port.
@@ -24,28 +43,43 @@ public class MooConnection {
 	 * 		connecting, or opening the I/O streams
 	 */
 	public MooConnection(String hostname, int port) throws IOException {
-		final InetAddress hosts[] = InetAddress.getAllByName(hostname);
-		Socket _conn = null;
-		
-		for (int i = 0; i < hosts.length && _conn == null; i++) {
+		InetAddress[] addresses = InetAddress.getAllByName(hostname);
+
+		InetSocketAddress sAddr;
+		SocketChannel _conn = null;
+
+		for (int i = 0; i < addresses.length && _conn == null; i++) {
+			sAddr = new InetSocketAddress(addresses[i], port);
+
 			try {
-				_conn = new Socket(hosts[i], port);
-			} catch (IOException e) {
-				// ignore, connection refused no doubt
+				_conn = SocketChannel.open();
+				_conn.configureBlocking(true);
+
+				_conn.connect(sAddr);
+
+				assert _conn
+					.isConnected() : "connect() returned, not connected";
+			} catch (IOException ioe) {
+				_conn.close();
+				_conn = null;
 			}
 		}
 
 		if (_conn == null) {
-			throw new IOException("No connection attempt succeeded.");
+			throw new ConnectException("Unable to connect");
 		} else {
 			conn = _conn;
-			in =
-				new BufferedReader(
-					new InputStreamReader(_conn.getInputStream()));
-			out =
-				new BufferedWriter(
-					new OutputStreamWriter(_conn.getOutputStream()));
 		}
+
+		Charset charset = Charset.forName("ISO-8859-1");
+		decoder = charset.newDecoder();
+		encoder = charset.newEncoder();
+
+		srBuf = ByteBuffer.allocate(BUFFER_SIZE);
+		swBuf = ByteBuffer.allocate(BUFFER_SIZE);
+
+		rBuf = CharBuffer.allocate(BUFFER_SIZE);
+		wBuf = CharBuffer.allocate(BUFFER_SIZE);
 	}
 
 	/**
@@ -55,7 +89,15 @@ public class MooConnection {
 	 * @throws IOException if an I/O error occurs.
 	 */
 	public boolean ready() throws IOException {
-		return in.ready();
+		synchronized (rBuf) {
+			boolean ret = false;
+
+			rBuf.flip();
+			ret = rBuf.toString().indexOf('\n') != -1;
+			rBuf.compact();
+
+			return ret;
+		}
 	}
 
 	/**
@@ -64,11 +106,20 @@ public class MooConnection {
 	 * @throws IOException if an I/O error occurs
 	 */
 	public void send(final String msg) throws IOException {
-		out.write(msg);
-		if (!msg.endsWith("\n")) {
-			out.write('\n');
+		synchronized (wBuf) {
+			wBuf.put(msg);
+			if (!msg.endsWith("\n")) {
+				wBuf.put('\n');
+			}
+
+			wBuf.flip();
+			encoder.encode(wBuf, swBuf, false);
+			wBuf.compact();
+
+			swBuf.flip();
+			conn.write(swBuf);
+			swBuf.compact();
 		}
-		out.flush();
 	}
 
 	/**
@@ -77,7 +128,31 @@ public class MooConnection {
 	 * @throws IOException if an I/O error occurs
 	 */
 	public String read() throws IOException {
-		return in.readLine();
+		StringBuffer line = new StringBuffer();
+		
+		char curr = '\u0000';
+		int readyChars = 0;
+		
+		while (curr != '\n') {
+			synchronized (rBuf) {
+				fillReadBuffers();
+				rBuf.flip();
+				readyChars = rBuf.remaining();
+			}
+			
+			while (readyChars > 0 && curr != '\n') {
+				synchronized (rBuf) {
+					curr = rBuf.get();
+					readyChars = rBuf.remaining();
+				}
+				
+				line.append(curr);
+			}
+			
+			rBuf.compact();
+		}
+		
+		return line.toString();
 	}
 
 	/**
@@ -85,9 +160,34 @@ public class MooConnection {
 	 * @throws IOException if an I/O error occurs
 	 */
 	public void close() throws IOException {
-		in.close();
-		out.close();
 		conn.close();
 	}
+	
+	private final void fillReadBuffers() throws IOException {
+		synchronized (rBuf) {
+			if (srBuf.position() == 0 && rBuf.position() == 0) {
+				conn.configureBlocking(true);
+			} else {
+				conn.configureBlocking(false);
+			}
 
+			int read = conn.read(srBuf);
+
+			if (read == -1 && rBuf.position() == 0) {
+				throw new EOFException();
+			} else if (read == 0 && srBuf.position() == 0) {
+				try {
+					Thread.sleep(50);
+				} catch (InterruptedException ie) {
+					InterruptedIOException iioe = new InterruptedIOException();
+					iioe.initCause(ie);
+				}
+			} else {
+				srBuf.flip();
+				decoder.decode(srBuf, rBuf, false);
+				srBuf.compact();
+			}
+		}
+	}
+	
 }
