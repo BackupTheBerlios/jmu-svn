@@ -1,0 +1,74 @@
+<project name="jMu" default="jar">
+
+	<property file="build.properties"/>
+	
+	<property name="version" value="0.0.1"/>
+
+	<target name="build">
+		<mkdir dir="output/classes"/>
+		
+		<javac
+			destdir="output/classes"
+			compiler="${build.compiler}"
+			source="1.4"
+			target="${build.target}"
+			optimize="${build.optimise}"
+			deprecation="${build.deprecation}"
+			debug="${build.debug}"
+			debuglevel="${build.debuglevel}">
+			
+			<src path="src"/>
+			
+		</javac>
+	</target>
+	
+	<target name="jar" depends="build">
+		<jar
+			jarfile="jmu-${version}.jar">
+			
+			<manifest>
+				<attribute name="Main-Class" value="jmu.Main"/>
+			</manifest>
+			
+			<zipfileset dir="output/classes">
+				<include name="**/*.class"/>
+				<include name="**/*.properties"/>
+			</zipfileset>
+			
+			<zipfileset dir="src">
+				<include name="jmu/data/i18n/Translations*.properties"/>
+			</zipfileset>
+			
+		</jar>
+	</target>
+
+	<target name="javadoc">
+		<mkdir dir="output/javadoc"/>
+		
+		<javadoc
+			destdir="output/javadoc"
+			doctitle="jMu ${version}"
+			footer="Copyright &amp;copy;2004 Lyle Dietz">
+			
+			<packageset dir="src">
+				<include name="jmu/**"/>
+			</packageset>
+			
+		</javadoc>
+	</target>
+	
+	<target name="all" depends="jar,javadoc"/>
+	
+	<target name="clean">
+		<delete includeEmptyDirs="true">
+		
+			<fileset dir="output"/>
+			
+			<fileset dir=".">
+				<include name="jmu*.jar"/>
+			</fileset>
+			
+		</delete>
+	</target>
+
+</project>
