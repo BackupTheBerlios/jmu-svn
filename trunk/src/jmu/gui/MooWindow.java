@@ -5,6 +5,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.ResourceBundle;
 import java.util.regex.Matcher;
@@ -147,6 +148,13 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 			String line = null;
 			try {
 				line = conn.read();
+			} catch (EOFException oefe) {
+				line =
+					"\u001b[31m" // red fg
+						+ translations.getString("Disconnected")
+						+ "\u001b[0m"; // reset
+						
+				running = false; // will fall out at end of loop
 			} catch (IOException ioe) {
 				ex = ioe;
 				ioe.printStackTrace();
@@ -155,10 +163,6 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 			}
 
 			if (line == null) {
-				break;
-			}
-
-			if (!running) {
 				break;
 			}
 
@@ -301,8 +305,8 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 		StyleConstants.setAlignment(def, StyleConstants.ALIGN_LEFT);
 		StyleConstants.setBackground(def, AnsiStyle.COLOURS[0][0]);
 		StyleConstants.setForeground(def, AnsiStyle.COLOURS[0][7]);
-		StyleConstants.setFontFamily(def, "monospaced");
-		StyleConstants.setFontSize(def, 12);
+		StyleConstants.setFontFamily(def, "Courier");
+		StyleConstants.setFontSize(def, 14);
 
 		AnsiStyle ansi = new AnsiStyle();
 
