@@ -1,7 +1,11 @@
-0.0.2
+HEAD
+	Added the scrollback hack factor as a static final in MooWindow.
+	Implemented command history.
+
+0.0.2 2004-07-28
 	Added disconnect menu item.
 	Tested the exception handling. Still needs some work.
 	Fixed the ANSI colour support. The reset code was setting bold.
 
-0.0.1
+0.0.1 2004-07-17
 	Initial Release

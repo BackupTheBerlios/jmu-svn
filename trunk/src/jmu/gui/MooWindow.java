@@ -7,7 +7,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.ResourceBundle;
-import java.util.Vector;
 import java.util.regex.Matcher;
 
 import javax.swing.*;
@@ -26,6 +25,8 @@ import jmu.net.MooConnection;
  */
 public class MooWindow extends JPanel implements Runnable, ActionListener {
 
+	public static final int SCROLLBACK_HACK_FACTOR = 10;
+
 	private ResourceBundle translations;
 
 	private MooConnection conn;
@@ -37,10 +38,8 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 	private StyledDocument doc;
 	private AnsiStyle style;
 
-	private JTextField input;
+	private JComboBox input;
 	private JButton send;
-
-	private Vector commands;
 
 	private boolean running = false;
 
@@ -70,13 +69,12 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 
 		text.setPreferredSize(new Dimension(640, 480));
 
-		input = new JTextField(80);
+		input = new JComboBox();
+		input.setEditable(true);
 		input.addActionListener(this);
 
 		send = new JButton(translations.getString("Send"));
 		send.addActionListener(this);
-
-		commands = new Vector();
 
 		__layoutComponents();
 		__initTextStyles();
@@ -105,13 +103,18 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 	 * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
 	 */
 	public void actionPerformed(ActionEvent ae) {
-		commands.add(input.getText());
-		input.selectAll();
-		try {
-			conn.send(input.getText());
-		} catch (IOException ioe) {
-			running = false;
-			ex = ioe;
+		if (ae.getActionCommand().equals("comboBoxEdited")) {
+			ComboBoxEditor inputEditor = input.getEditor();
+			String text = inputEditor.getItem().toString();
+
+			input.addItem(text);
+			input.getEditor().selectAll();
+			try {
+				conn.send(text);
+			} catch (IOException ioe) {
+				running = false;
+				ex = ioe;
+			}
 		}
 	}
 
@@ -145,7 +148,8 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 					vertScrollBar.getMaximum() - textScroller.getHeight();
 				sbAnchorPos = (sbAnchorPos < 0) ? 0 : sbAnchorPos;
 
-				if (Math.abs(sbAnchorPos - vertScrollBar.getValue()) < 10) {
+				if (Math.abs(sbAnchorPos - vertScrollBar.getValue())
+					< SCROLLBACK_HACK_FACTOR) {
 					scrollDown = true;
 				}
 
