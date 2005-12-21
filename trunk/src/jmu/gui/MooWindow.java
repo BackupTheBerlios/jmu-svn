@@ -26,9 +26,6 @@ import jmu.net.MooConnection;
  */
 public class MooWindow extends JPanel implements Runnable, ActionListener {
 
-	public static final int SCROLLBACK_HACK_FACTOR = 10;
-	public static final int SCROLLBACK_HACK_TIME = 50;
-
 	private final ResourceBundle translations;
 
 	private final MooConnection conn;
@@ -172,7 +169,7 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 						- (vertScrollBar.getMaximum()
 							- vertScrollBar.getVisibleAmount()));
 
-			if (distFromBottom < SCROLLBACK_HACK_FACTOR) {
+			if (distFromBottom == 0) {
 				scroll = true;
 			}
 
@@ -183,27 +180,7 @@ public class MooWindow extends JPanel implements Runnable, ActionListener {
 				vertScrollBar.setValue(
 					vertScrollBar.getMaximum()
 						- vertScrollBar.getVisibleAmount());
-
-				// now lag it by the time hack to get the real max, if there is
-				// nothing more to append atm
-				boolean ready;
-				try {
-					ready = conn.ready();
-				} catch (IOException ioe) {
-					ex = ioe;
-					break;
-				}
-
-				if (!ready) {
-					try {
-						Thread.sleep(SCROLLBACK_HACK_TIME);
-					} catch (InterruptedException e) {
-					}
-					vertScrollBar.setValue(
-						vertScrollBar.getMaximum()
-							- vertScrollBar.getVisibleAmount());
-					scroll = false;
-				}
+				text.repaint();
 			}
 
 		}
