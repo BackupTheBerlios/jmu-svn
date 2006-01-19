@@ -1,0 +1,23 @@
+HEAD
+
+0.0.3 2004-08-21
+	Added a MOO list.
+	Added some stuff that would be needed for a configuration directory.
+	Went all Nazi with final through instance variables and method args.
+	Changed bits that are deprecated in J2SE 1.5.
+	Optimised how the translations are handled.
+	Added the scrollback hack factor as a static final in MooWindow.
+	Implemented command history.
+	Moved connection attempts to a persistent thread.
+	Added a shutdown hook to interrupt connection threads waiting on I/O
+	Removed a busy wait that was sending %CPU to 100 on win32.
+	Re-implemented the back-end comms to use NIO.
+	Re-implemented auto-scroll. Should work faster, and more often.
+
+0.0.2 2004-07-28
+	Added disconnect menu item.
+	Tested the exception handling. Still needs some work.
+	Fixed the ANSI colour support. The reset code was setting bold.
+
+0.0.1 2004-07-17
+	Initial Release
