@@ -1,4 +1,4 @@
-<project name="jMu" default="jar">
+<project name="jMu" default="all">
 
 	<property file="build.properties"/>
 	
@@ -24,7 +24,7 @@
 	
 	<target name="jar" depends="build">
 		<jar
-			jarfile="jmu-${version}.jar">
+			jarfile="jmu.jar">
 			
 			<manifest>
 				<attribute name="Main-Class" value="jmu.Main"/>
@@ -32,13 +32,16 @@
 			
 			<zipfileset dir="output/classes">
 				<include name="**/*.class"/>
-				<include name="**/*.properties"/>
 			</zipfileset>
 			
+		</jar>
+	</target>
+	
+	<target name="i18n">
+		<jar destfile="jmu-i18n.jar">
 			<zipfileset dir="src">
 				<include name="jmu/data/i18n/Translations*.properties"/>
 			</zipfileset>
-			
 		</jar>
 	</target>
 
@@ -57,7 +60,7 @@
 		</javadoc>
 	</target>
 	
-	<target name="all" depends="jar,javadoc"/>
+	<target name="all" depends="jar,i18n" description="Full build"/>
 	
 	<target name="clean">
 		<delete includeEmptyDirs="true">
